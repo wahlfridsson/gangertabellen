@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mattesuperhjälten – Äventyret börjar!</title>
+<style>
+  :root { --navy:#103c70; --blue:#1989ee; --gold:#ffd43b; --green:#49c65b; --purple:#a653ed; }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; min-height:100vh; color:#12345a;
+    font-family: "Trebuchet MS", system-ui, sans-serif;
+    background: linear-gradient(#77d6ff 0%, #d7f5ff 42%, #a6e58b 43%, #54b85f 100%);
+    display:flex; justify-content:center; align-items:center; padding:18px;
+  }
+  .game { width:min(980px,100%); background:rgba(255,255,255,.93); border:5px solid #174b82;
+    border-radius:28px; box-shadow:0 12px 0 #0c2e55, 0 18px 35px #174b8244; overflow:hidden; }
+  header { background:linear-gradient(120deg,#1469ba,#092f63); color:white; padding:16px 20px; display:flex; gap:14px; align-items:center; justify-content:space-between; flex-wrap:wrap; }
+  .hero { font-size:2.5rem; }
+  h1 { margin:0; font-size:clamp(1.3rem,4vw,2rem); }
+  .stats { display:flex; gap:9px; flex-wrap:wrap; }
+  .stat { background:#082b57; border:2px solid #68c9ff; border-radius:14px; padding:8px 12px; font-weight:800; white-space:nowrap; }
+  .scene { padding:clamp(16px,4vw,32px); background:linear-gradient(180deg,#c6f1ff,#f2fbff 62%,#ffe8a7); text-align:center; }
+  .world { display:flex; align-items:center; justify-content:space-around; gap:16px; margin:0 auto 16px; max-width:700px; }
+  .character { font-size:clamp(4rem,12vw,7rem); filter:drop-shadow(0 5px 2px #174b8233); animation:bob 2s ease-in-out infinite; }
+  .monster { animation:bob 2.2s ease-in-out infinite reverse; }
+  @keyframes bob { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
+  .speech { background:white; border:3px solid #f0bd50; border-radius:20px; padding:12px 20px; font-weight:900; font-size:clamp(1.4rem,5vw,2.8rem); box-shadow:0 5px 0 #dca044; display:inline-block; margin:6px 0 20px; }
+  .hint { margin:0 0 16px; font-size:1rem; color:#315578; }
+  .answers { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; max-width:560px; margin:auto; }
+  button { font:inherit; cursor:pointer; touch-action:manipulation; }
+  .answer { border:3px solid white; border-radius:18px; color:white; font-size:clamp(1.25rem,4vw,2rem); font-weight:900; padding:15px; box-shadow:0 5px 0 #174b8244; transition:transform .12s,filter .12s; }
+  .answer:hover:not(:disabled) { transform:translateY(-3px); filter:brightness(1.08); }
+  .answer:focus-visible, .small-btn:focus-visible { outline:4px solid #ffb800; outline-offset:3px; }
+  .answer:disabled { cursor:default; opacity:.8; }
+  .a0{background:#1989ee}.a1{background:#48b955}.a2{background:#f5b900;color:#4c3500}.a3{background:#a653ed}
+  .feedback { min-height:56px; margin:18px auto 0; font-size:1.15rem; font-weight:900; max-width:650px; }
+  .bottom { display:flex; gap:12px; justify-content:center; flex-wrap:wrap; padding:0 18px 22px; background:#f2fbff; }
+  .small-btn { border:0; border-radius:13px; padding:11px 16px; background:#123e72; color:white; font-weight:800; box-shadow:0 4px 0 #082b57; }
+  .small-btn:hover { filter:brightness(1.12); }
+  .progress-wrap { padding:0 24px 18px; background:#f2fbff; }
+  .progress-label { display:flex; justify-content:space-between; gap:10px; font-size:.9rem; font-weight:800; margin-bottom:6px; }
+  .track { height:14px; background:#d5e8f6; border-radius:99px; overflow:hidden; border:2px solid #9bc7e6; }
+  .bar { height:100%; width:0%; background:linear-gradient(90deg,#ffce28,#ff9f1c); transition:width .3s; }
+  footer { text-align:center; background:#e3f6ff; padding:12px; color:#315578; font-size:.88rem; }
+  @media(max-width:480px) { body{padding:8px}.game{border-width:3px;border-radius:20px}header{padding:12px}.stat{padding:6px 8px;font-size:.9rem}.answers{gap:9px}.answer{padding:13px 8px}.world{gap:6px} }
+</style>
+</head>
+<body>
+<main class="game" aria-label="Mattesuperhjälten mattespel">
+  <header>
+    <div style="display:flex;align-items:center;gap:10px"><span class="hero" aria-hidden="true">🦸</span><div><h1>Mattesuperhjälten</h1><div>Räkna rätt och rädda den magiska världen!</div></div></div>
+    <div class="stats" aria-live="polite">
+      <div class="stat">⭐ Poäng: <span id="score">0</span></div>
+      <div class="stat">❤️ Liv: <span id="lives">❤️❤️❤️</span></div>
+      <div class="stat">🔥 I rad: <span id="streak">0</span></div>
+    </div>
+  </header>
+  <section class="scene">
+    <div class="world">
+      <div class="character" aria-label="Superhjälte">🦸‍♀️</div>
+      <div style="font-size:2rem" aria-hidden="true">⚡</div>
+      <div class="character monster" id="monster" aria-label="Monster">👾</div>
+    </div>
+    <div class="speech" id="question">6 × 4 = ?</div>
+    <p class="hint" id="hint">Välj rätt svar för att besegra monstret!</p>
+    <div class="answers" id="answers">
+      <button class="answer a0" data-index="0">18</button>
+      <button class="answer a1" data-index="1">22</button>
+      <button class="answer a2" data-index="2">24</button>
+      <button class="answer a3" data-index="3">28</button>
+    </div>
+    <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+  </section>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>🗺️ Äventyrsväg</span><span id="progressText">0 av 10 frågor</span></div>
+    <div class="track"><div class="bar" id="progress"></div></div>
+  </div>
+  <div class="bottom">
+    <button class="small-btn" id="hintBtn">💡 Visa en ledtråd</button>
+    <button class="small-btn" id="restartBtn">🔄 Börja om</button>
+  </div>
+  <footer>Tips: Du kan också använda tangenterna 1, 2, 3 och 4 för att svara.</footer>
+</main>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  let score = 0, lives = 3, streak = 0, answered = 0, correctAnswer = 24, locked = false, hintShown = false;
+  const monsters = ["👾","👹","🐲","👻","🦖","🐉","🤖","🧌"];
+  const questionEl = $("question"), feedback = $("feedback"), hint = $("hint"), buttons = [...document.querySelectorAll(".answer")];
+  function shuffle(arr) { return arr.sort(() => Math.random() - .5); }
+  function newQuestion() {
+    locked = false; hintShown = false;
+    if (lives <= 0 || answered >= 10) return endGame();
+    const a = 2 + Math.floor(Math.random() * 9);
+    const b = 2 + Math.floor(Math.random() * 9);
+    correctAnswer = a * b;
+    questionEl.textContent = `${a} × ${b} = ?`;
+    $("monster").textContent = monsters[Math.floor(Math.random() * monsters.length)];
+    hint.textContent = "Välj rätt svar för att besegra monstret!";
+    feedback.textContent = "";
+    const choices = new Set([correctAnswer]);
+    while (choices.size < 4) {
+      let candidate;
+      if (Math.random() < .65) candidate = correctAnswer + (Math.floor(Math.random() * 7) - 3) * (Math.random() < .5 ? a : b);
+      else candidate = 2 + Math.floor(Math.random() * 80);
+      if (candidate > 0 && candidate !== correctAnswer) choices.add(candidate);
+    }
+    const opts = shuffle([...choices]);
+    buttons.forEach((btn,i) => { btn.textContent = opts[i]; btn.disabled = false; btn.dataset.value = opts[i]; });
+  }
+  function updateStats() {
+    $("score").textContent = score;
+    $("lives").textContent = "❤️".repeat(lives) + "🖤".repeat(3-lives);
+    $("streak").textContent = streak;
+    $("progressText").textContent = `${answered} av 10 frågor`;
+    $("progress").style.width = `${answered*10}%`;
+  }
+  function answer(value) {
+    if (locked || lives <= 0 || answered >= 10) return;
+    locked = true; answered++;
+    buttons.forEach(b => b.disabled = true);
+    if (Number(value) === correctAnswer) {
+      streak++; score += 10 + (streak >= 3 ? 5 : 0);
+      feedback.textContent = streak >= 3 ? "🔥 SUPERKOMBO! Rätt svar! +15 poäng!" : "🎉 RÄTT! Monstret är besegrat! +10 poäng!";
+      $("monster").textContent = "💥";
+    } else {
+      lives--; streak = 0;
+      feedback.textContent = `Nästan! Rätt svar var ${correctAnswer}. Kämpa vidare, superhjälte!`;
+      $("monster").textContent = "😈";
+    }
+    updateStats();
+    if (lives <= 0 || answered >= 10) {
+      setTimeout(endGame, 1100);
+    } else {
+      setTimeout(newQuestion, 1300);
+    }
+  }
+  function endGame() {
+    locked = true; buttons.forEach(b => b.disabled = true);
+    questionEl.textContent = lives > 0 ? "🏆 ÄVENTYR KLART!" : "🛡️ DAGS ATT LÄKA!";
+    $("monster").textContent = lives > 0 ? "👑" : "💖";
+    hint.textContent = lives > 0 ? "Du klarade alla 10 frågor!" : "Du gjorde ditt bästa. Hjältar övar och försöker igen!";
+    feedback.textContent = `Du fick ${score} poäng och svarade på ${answered} frågor.`;
+    $("hintBtn").textContent = "💡 Visa en ledtråd";
+  }
+  buttons.forEach(btn => btn.addEventListener("click", () => answer(btn.dataset.value)));
+  $("hintBtn").addEventListener("click", () => {
+    if (locked) return;
+    const [a,b] = questionEl.textContent.split(" × ").map(s => parseInt(s,10));
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return;
+    hintShown = true;
+    hint.textContent = `💡 Ledtråd: ${a} × ${b} betyder ${a} grupper med ${b}. Räkna ${b} + ${b} + ${b} ...`;
+  });
+  $("restartBtn").addEventListener("click", () => {
+    score = 0; lives = 3; streak = 0; answered = 0; updateStats(); newQuestion();
+  });
+  document.addEventListener("keydown", e => {
+    if (["1","2","3","4"].includes(e.key) && !locked) {
+      const btn = buttons[Number(e.key)-1];
+      if (btn && !btn.disabled) answer(btn.dataset.value);
+    }
+  });
+  updateStats(); newQuestion();
+})();
+</script>
+</body>
+</html>
